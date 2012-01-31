@@ -58,7 +58,7 @@ class FedEx {
             'MeterNumber' => $this->_currency['meterNumber'],
         );
 
-        $wsdl = realpath(str_replace('classes', 'wsdl', dirname(__FILE__)) . DIRECTORY_SEPARATOR . $this->_service['wsdl']);
+        $wsdl = Kohana::$config->load('fedex.wsdldirectory').$this->_service['wsdl'];
 
         $soap_options = array();
         $soap_options['trace'] = true;
