@@ -4,28 +4,38 @@ class FedEx {
 
 	protected $_service;
     protected $_currency;
-	protected static $_instance;
+	protected static $_instance = array();
     protected $_methods = array();
     protected $_base_request = array();
     protected $_last_request;
 
-	public static function instance($service, $currency)
-	{
-		if ( ! isset(FedEx::$_instance))
-		{
-            $currency = Kohana::$config->load('fedex.currency.'.$currency);
-            $service = Kohana::$config->load('fedex.service.'.$service);
+    public static function getServices()
+    {
+        $service_config = Kohana::$config->load('fedex.service');
 
-            if (empty($service))
+        return array_keys($service_config);
+    }
+
+    public static function __callStatic($name, $arguments)
+    {
+		$service = $name;
+        $currency = $arguments[0];
+
+        if ( ! isset(FedEx::$_instance[$service][$currency]))
+		{
+            $currency_config = Kohana::$config->load('fedex.currency.'.$currency);
+            $service_config = Kohana::$config->load('fedex.service.'.$service);
+
+            if (empty($service_config))
                 throw new Kohana_Exception('The FedEx Service has not been selected');
 
-            if (empty($currency))
+            if (empty($currency_config))
                 throw new Kohana_Exception('The FedEx account currency has not been selected');
 
-            FedEx::$_instance = new FedEx($service, $currency);
+            FedEx::$_instance[$service][$currency] = new FedEx($service_config, $currency_config);
 		}
 		
-		return FedEx::$_instance;
+		return FedEx::$_instance[$service][$currency];
 	}
 
     private function __construct($service, $currency)
