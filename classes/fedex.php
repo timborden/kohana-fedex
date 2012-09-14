@@ -85,14 +85,52 @@ class FedEx {
         return $this->_last_request;
     }
 
-
     public function __call($name, $arguments)
     {
         if (in_array($name, $this->_methods))
         {
+
             $this->_last_request = array_merge($this->_base_request, $arguments[0]);
 
-            return $this->_soapClient->$name($this->_last_request);
+            try
+            { 
+                $response = $this->_soapClient->$name($this->_last_request);
+            } 
+            catch (SoapFault $sf)
+            { 
+                if (is_array($sf->detail->fault->details->ValidationFailureDetail->message))
+                    $message = implode(", ", $sf->detail->fault->details->ValidationFailureDetail->message);
+                else 
+                    $message = $sf->detail->fault->details->ValidationFailureDetail->message;
+                
+                throw new Kohana_Exception('FedEx SoapFault error: :message', array(':message' => $message));
+            } 
+            catch (Exception $e)
+            { 
+                throw new Kohana_Exception('FedEx Exception error: :message', array(':message' => $e->getMessage()));
+            }
+
+            if ($response->HighestSeverity == "ERROR")
+            {
+                $account = 'FedEx account:'.$this->_currency['shipAccount'].", ".
+                    'FedEx meter:'.$this->_currency['meterNumber'].", ".
+                    'FedEx transaction:'.$this->_last_request['TransactionDetail']['CustomerTransactionId'];
+
+                if (is_array($response->Notifications))
+                {
+                    $messages = array();
+                    foreach($response->Notifications as $notification)
+                        $messages[] = $notification->Severity.': '.$notification->Message;
+                    $message = implode(', ', $messages);
+                }
+                else
+                {
+                    $message = $response->Notifications->Severity.': '.$response->Notifications->Message;
+                }
+                throw new Kohana_Exception('FedEx '.$name.' Notifications (:account): :message', array(':account' => $account, ':message' => $message));
+            }
+
+            return $response;
         }
     }
 }
