@@ -110,26 +110,6 @@ class FedEx {
                 throw new Kohana_Exception('FedEx Exception error: :message', array(':message' => $e->getMessage()));
             }
 
-            if ($response->HighestSeverity == "ERROR")
-            {
-                $account = 'FedEx account:'.$this->_currency['shipAccount'].", ".
-                    'FedEx meter:'.$this->_currency['meterNumber'].", ".
-                    'FedEx transaction:'.$this->_last_request['TransactionDetail']['CustomerTransactionId'];
-
-                if (is_array($response->Notifications))
-                {
-                    $messages = array();
-                    foreach($response->Notifications as $notification)
-                        $messages[] = $notification->Severity.': '.$notification->Message;
-                    $message = implode(', ', $messages);
-                }
-                else
-                {
-                    $message = $response->Notifications->Severity.': '.$response->Notifications->Message;
-                }
-                throw new Kohana_Exception('FedEx '.$name.' Notifications (:account): :message', array(':account' => $account, ':message' => $message));
-            }
-
             return $response;
         }
     }
