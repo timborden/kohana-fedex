@@ -62,6 +62,7 @@ class FedEx {
 
         $soap_options = array();
         $soap_options['trace'] = true;
+        $soap_options['exceptions'] = true;
         if (Kohana::$environment === Kohana::PRODUCTION) $soap_options['cache_wsdl'] = WSDL_CACHE_NONE;
 
         $this->_soapClient = new SoapClient($wsdl, $soap_options);
@@ -91,19 +92,13 @@ class FedEx {
         {
 
             $this->_last_request = array_merge($this->_base_request, $arguments[0]);
-
             try
             { 
                 $response = $this->_soapClient->$name($this->_last_request);
             } 
             catch (SoapFault $sf)
             { 
-                if (is_array($sf->detail->fault->details->ValidationFailureDetail->message))
-                    $message = implode(", ", $sf->detail->fault->details->ValidationFailureDetail->message);
-                else 
-                    $message = $sf->detail->fault->details->ValidationFailureDetail->message;
-                
-                throw new Kohana_Exception('FedEx SoapFault error: :message', array(':message' => $message));
+                throw new Kohana_Exception('FedEx SoapFault error: :message', array(':message' => $sf->getMessage()));
             } 
             catch (Exception $e)
             { 
